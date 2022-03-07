@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
 
-# TODO add a parameter to select dithering method
-# TODO tester avec une seule image (sans animation)
-# TODO stocker 3 gif: une seule image, une animation simple, une video complexe
-# TODO reduce the zlib_window_size to 10 or 11 to reduce memory usage during uncompression
-#      Note: any impact on the compressed size file?
-
-
 import argparse
 import os.path
 import sys
@@ -16,14 +9,11 @@ from PIL import Image
 from PIL.GifImagePlugin import GifImageFile
 
 import ssd1306_image_converter
+import ssd1306_image_reader
 
 # By default, we use do not use the dithering when converting the GIF to 1-bit per pixel
 # It may be useful when the animated GIF uses a lot of colors (videos...)
 default_dither_method = Image.NONE # or Image.FLOYDSTEINBERG
-
-# By default, the zlib window size is set to -12 (4k) to preserve the micropython memory
-# but it is possible to use -zlib.MAX_WBITS for better performances
-default_zlib_window_size = -12
 
 debug = False
 
@@ -40,7 +30,8 @@ def get_pil_image_info_str(img) -> str:
 
 
 def convert(verbose, compression, overwrite, input_filename,
-            zlib_window_size=default_zlib_window_size, dither_method=default_dither_method):
+            zlib_window_size=ssd1306_image_reader.DEFAULT_ZLIB_WINDOW_SIZE,
+            dither_method=default_dither_method):
     # Check if input file exits
     if not os.path.isfile(input_filename):
         print("Error: file {} does not exit!".format(input_filename), file=sys.stderr)
@@ -54,8 +45,8 @@ def convert(verbose, compression, overwrite, input_filename,
     #img_in.seek(0)
     #img_in.show("default")
 
-    # Prepare the output filename (from "filename.gif" to "filename.widthxheight.z" or ".raw")
-    output_filename = "{}.{}x{}".format(input_filename.rsplit('.', 1)[0], img_in.width, img_in.height)
+    # Prepare the output filename (from "filename.gif" to "filename.widthxheight.nimg.z" or ".raw")
+    output_filename = "{}.{}x{}.{}img".format(input_filename.rsplit('.', 1)[0], img_in.width, img_in.height, img_in.n_frames)
     if compression:
         output_filename = "{}.z".format(output_filename)
     else:
@@ -80,7 +71,6 @@ def convert(verbose, compression, overwrite, input_filename,
         img_out_compress = zlib.compressobj(9, zlib.DEFLATED, zlib_window_size)
 
     for frame in range(img_in.n_frames):
-    #for frame in range(1):
         if verbose:
             print("{:5}/{} in progress...".format(frame + 1, img_in.n_frames))
 
@@ -116,6 +106,9 @@ def convert(verbose, compression, overwrite, input_filename,
 
     img_out_file.close()
 
+    if verbose:
+        print("{} successfully generated :-)".format(output_filename))
+
 
 def init_argparse() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -125,8 +118,8 @@ def init_argparse() -> argparse.ArgumentParser:
 Convert an animated GIF (or a single image GIF) to an image file for ssd1306-like OLED panel.
 
 Notes:
- - The ssd1306 image filename uses the format filename.WidthxHeight.Frames.raw (.z if compressed).
-   For example "my_animation.128x64.42.z".""",
+ - The ssd1306 image filename uses the format filename.WidthxHeight.Nimg.raw (.z if compressed).
+   For example "my_animation.128x64.42img.z".""",
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument("filename")
