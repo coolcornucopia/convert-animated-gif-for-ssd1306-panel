@@ -45,8 +45,14 @@ def convert(verbose, compression, overwrite, input_filename,
     #img_in.seek(0)
     #img_in.show("default")
 
+    # Determine the number of frames
+    if hasattr(img_in, 'n_frames'):
+        n_frames = img_in.n_frames  # Animated GIF case
+    else:
+        n_frames = 1                # Single frame image (PNG, GIF...)
+
     # Prepare the output filename (from "filename.gif" to "filename.widthxheight.nimg.z" or ".raw")
-    output_filename = "{}.{}x{}.{}img".format(input_filename.rsplit('.', 1)[0], img_in.width, img_in.height, img_in.n_frames)
+    output_filename = "{}.{}x{}.{}img".format(input_filename.rsplit('.', 1)[0], img_in.width, img_in.height, n_frames)
     if compression:
         output_filename = "{}.z".format(output_filename)
     else:
@@ -70,9 +76,9 @@ def convert(verbose, compression, overwrite, input_filename,
     if compression:
         img_out_compress = zlib.compressobj(9, zlib.DEFLATED, zlib_window_size)
 
-    for frame in range(img_in.n_frames):
+    for frame in range(n_frames):
         if verbose:
-            print("{:5}/{} in progress...".format(frame + 1, img_in.n_frames))
+            print("{:5}/{} in progress...".format(frame + 1, n_frames))
 
         img_in.seek(frame)
 
