@@ -16,6 +16,7 @@
 - [ ] maybe create helpers for managing filename specific format
 - [ ] maybe add the compression zlib_window_size into the filename format
 - [ ] any interest in using stdin & stdout for the conversion?
+- [ ] maybe use a true zlib/gzip format (with zlib headers)
 
 ## Reader
 
@@ -25,6 +26,7 @@
 - [ ] store 3 input gif: single image, simple animation, complex animation (from a video)
 - [ ] add a parameter to select the zlib_window_size to reduce memory usage during uncompression
       note: any impact on the compressed size file?
+- [ ] add a parameter for scaling ("--scale 128x64" or -s "128x64")
 
 ## From ssd1306
 - [ ] add a parameter to show the input/output results in windows
