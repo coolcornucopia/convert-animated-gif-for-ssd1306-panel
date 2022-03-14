@@ -10,6 +10,7 @@ from PIL.GifImagePlugin import GifImageFile
 import ssd1306_image_converter
 import ssd1306_image_reader
 
+DEFAULT_DELAY_MS = 50
 
 debug = False
 
@@ -24,7 +25,7 @@ def get_pil_image_info_str(img) -> str:
     return str
 
 
-def convert(verbose, overwrite, input_filename):
+def convert(verbose, overwrite, input_filename, delay_ms):
     img_reader = ssd1306_image_reader.SSD1306_ImageReader(input_filename)
     w = img_reader.width
     h = img_reader.height
@@ -70,7 +71,7 @@ def convert(verbose, overwrite, input_filename):
     # Save as animated gif with infinite loop
     # TODO maybe add a parameter for default duration
     # TODO maybe add a parameter for default loop
-    img_out[0].save(output_filename, save_all = True, append_images = img_out[1:], optimize = True, duration = 50, loop = 0)
+    img_out[0].save(output_filename, save_all = True, append_images = img_out[1:], optimize = True, duration = delay_ms, loop = 0)
 
     if verbose:
         print("{} successfully generated :-)".format(output_filename))
@@ -92,6 +93,7 @@ Notes:
     parser.add_argument("filename")
     parser.add_argument("-f", "--force",    action="store_true", help="force overwrite")
     parser.add_argument("-v", "--verbose",  action="store_true", help="explain what is being done")
+    parser.add_argument("-d", "--delay_ms", help="animation delay in ms (default: %(default)s)", type=int, required=False, default=DEFAULT_DELAY_MS)
     return parser
 
 def main() -> None:
@@ -100,7 +102,7 @@ def main() -> None:
     if debug:
         print(args)
 
-    convert(args.verbose, args.force, args.filename)
+    convert(args.verbose, args.force, args.filename, args.delay_ms)
 
 if __name__ == "__main__":
     main()
