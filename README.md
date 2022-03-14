@@ -12,8 +12,9 @@ The **zlib feature** combined with the **ssd1306 conversion** saves both CPU and
 ![Animated gif, still picture and video on the VittaScience Robot Martien](examples/alphabot2_example.gif).
 
  > **Notes**
- > - The above video example is the famous [Big Buck Bunny](https://studio.blender.org/films/big-buck-bunny/?asset=263) from [Blender Studio](https://studio.blender.org) under the license [CC-BY](https://creativecommons.org/licenses/by/4.0/), converted to fit the size of the animated gif, more details [below](#video_big_buck_bunny_details).
- > - The above black cat picture is from [Gretchen Auer on UnSplash](https://unsplash.com/photos/EMnLrtASNKE) and is under the [Unsplash License](https://unsplash.com/license), more details [below](#still_mycat_details).
+ > - The above AlphaBot2 video has been recorded in mp4 then converted to an animated gif thanks to ffmpeg, more details [here](#video_alphabot2_example)
+ > - The video example contains the famous [Big Buck Bunny](https://studio.blender.org/films/big-buck-bunny/?asset=263) video from [Blender Studio](https://studio.blender.org) under the license [CC-BY](https://creativecommons.org/licenses/by/4.0/), converted to fit the size of the animated gif, more details [below](#video_big_buck_bunny_details).
+ > - The video example contains a cat picture from [Gretchen Auer on UnSplash](https://unsplash.com/photos/EMnLrtASNKE) and is under the [Unsplash License](https://unsplash.com/license), more details [below](#still_mycat_details).
 
 ---
 
@@ -25,12 +26,10 @@ The **zlib feature** combined with the **ssd1306 conversion** saves both CPU and
 - [How to use the scripts](#how-to-use-the-scripts)
 - [Result examples](#result-examples)
 - [How to use the generated images in MicroPython](#how-to-use-the-generated-images-in-micropython)
-- [Extra: Use ffmpeg for converting video to animated gif](#extra-use-ffmpeg-for-converting-video-to-animated-gif)
 - [Other possible solutions with different dependencies](#other-possible-solutions-with-different-dependencies)
 - [Any questions or comments are welcome :bird:](#any-questions-or-comments-are-welcome-bird)
 
 <!-- /code_chunk_output -->
-
 
 ## How to use the scripts
 The main Python script is **"convert_animated_gif_to_ssd1306_images.py"**.
@@ -102,6 +101,57 @@ export input_filename="Big_Buck_Bunny_4K.webm.480p.webm"
 export output_filename="Big_Buck_Bunny_monow.gif"
 ffmpeg -ss 318 -t 20 -i ${input_filename} -vf "fps=10,scale=128x64:flags=lanczos,format=monow,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" -loop 0 ${output_filename}
 ```
+
+## How to use the generated images in MicroPython
+**under construction :-)**
+
+
+
+<a name="video_alphabot2_example"></a>
+> **Note** The AlphaBot2 video has been recorded in mp4 then converted to an animated gif thanks to the following ffmpeg commands
+``` bash
+export input_filename="alphabot2_example_original.mp4"
+export output_filename="alphabot2_example.gif"
+ffmpeg -i ${input_filename} -vf "fps=10,scale=512x288:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" -loop 0 ${output_filename}
+```
+
+## Other possible solutions with different dependencies
+There are of course more solutions than this PIL single-dependency Python script :-)
+
+For instance, you can have a look to Arduino ssd1306-related sw tools...
+
+You can also use simple command lines for a solution close to this Python script... but without the zlib/gzip compression and the ssd1306-format conversion, that are probably the two most important features to save CPU and disk usage ;-)...
+
+Here below an example based on [gifsicle](https://www.lcdf.org/gifsicle/) and [ImageMagick](https://imagemagick.org/index.php):
+``` bash
+# Installation
+sudo apt-get install imagemagick # for convert tool
+sudo apt-get install gifsicle    # for gifsicle tool
+
+export input_filename="animated_python.gif"
+
+# Convert to 1-bit with the median-cut filter and extract all frames as gif output.gif.xyz
+rm -rf frames
+mkdir frames
+gifsicle --colors 2 --color-method median-cut --explode ${input_filename} -o frames/output.gif
+
+# Get data size thanks to resolution (we /8 as 1-bit / pixel)
+bytes=$(identify -format "%[fx:h*w/8]" frames/output.gif.000)
+
+# Check the above computation (simple trace)
+echo filesize $bytes bytes
+
+# convert to bmp then remove bmp header (keep only data at the end of the bmp)
+for f in frames/*.*; do convert $f bmp:- | tail -c $bytes > $f.raw ; done
+cat frames/*.raw > output.raw
+
+# The result is in output.raw
+ls -al output.raw
+
+# Note: we may use pbm instead of bmp but pbm are inverted so it is easier to vertically flip bmp :-)
+```
+
+> **Note** Do not forget to use **ssd1306_image_converter.py** function **to_ssd1306()** to convert your raw file to the ssd1603 format before sending it to the panel.
 
 
 ## Any questions or comments are welcome :bird:
