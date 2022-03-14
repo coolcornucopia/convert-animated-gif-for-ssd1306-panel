@@ -103,12 +103,27 @@ ffmpeg -ss 318 -t 20 -i ${input_filename} -vf "fps=10,scale=128x64:flags=lanczos
 ```
 
 ## How to use the generated images in MicroPython
-**under construction :-)**
+The Python/MicroPython source code for the generated image reader is located in **ssd1306_image_reader.py**. You mainly need to call the constructor ```ssd1306_image_reader.SSD1306_ImageReader(filename)``` and the ```next_frame()``` method. Here below a short example for reference:
+``` Python
+... # Initialize your ssd1306 oled panel + whatever is required for your board
+import ssd1306_image_reader            # See ssd1306_image_reader.py
 
+img_filename = "myanim.128x64.36img.z" # Your animation file
+
+img_reader = ssd1306_image_reader.SSD1306_ImageReader(img_filename) # Call the constructor
+
+for frame in range(img_reader.frames): # Display the animation frames by frames
+    img_buf = img_reader.next_frame()  # Get the current frame
+    oled.send_buffer(img_buf)          # Display it
+```
+
+In the directory **"examples/vittascience_alphabot2**, you can find a full MicroPython example based on the [Mars rover - WB55 version](https://en.vittascience.com/shop/275/Robot-martien---version-Nucleo-WB55RG) from [vittascience](https://en.vittascience.com/). To use it, copy the full content of this directory to your board. Do not forget to copy the related images (.raw or .z) on your board too and update **"main.py"** according to your need.
+
+The ```oled.send_buffer()``` function is maybe not available in your MicroPython firmware, you can find its source code in **"examples/vittascience_alphabot2/stm32_ssd1306.py"**.
 
 
 <a name="video_alphabot2_example"></a>
-> **Note** The AlphaBot2 video has been recorded in mp4 then converted to an animated gif thanks to the following ffmpeg commands
+> **Note** The AlphaBot2 video has been recorded in mp4 then converted to an animated gif thanks to the following ffmpeg commands:
 ``` bash
 export input_filename="alphabot2_example_original.mp4"
 export output_filename="alphabot2_example.gif"
@@ -151,7 +166,40 @@ ls -al output.raw
 # Note: we may use pbm instead of bmp but pbm are inverted so it is easier to vertically flip bmp :-)
 ```
 
-> **Note** Do not forget to use **ssd1306_image_converter.py** function **to_ssd1306()** to convert your raw file to the ssd1603 format before sending it to the panel.
+> **Note** Do not forget to use **ssd1306_image_converter.py** function **```to_ssd1306()```** to convert your raw file to the ssd1603 format before sending it to the panel. The MicroPython source code could be then:
+
+``` Python
+... # Initialize your ssd1306 oled panel + whatever is required for your board
+import ssd1306_image_converter          # See ssd1306_image_reader.py
+
+size = (128 * 64) // 8                  # Full screen image size in bytes
+
+### STILL PICTURE
+img_filename = "still_image.raw"        # Your still picture file
+f = open(img_filename, 'rb')            # Open, read and close the file
+img = f.read(size)
+f.close()
+buf = bytearray(size)                   # Zeroified the output buffer
+ssd1306_image_converter.to_ssd1306(128, 64, img, buf) # Convert to ssd1306 format (ie cpu cost)
+oled.send_buffer(buf)                   # Display the image
+
+text = input("please press enter to continue")
+
+### ANIMATION
+### no compression, we read image by image to save memory.
+### we may read the entire file and use a memoryview.
+img_filename = "animation.raw"          # Your animation file
+f = open(img_filename, "rb")
+while 1:                                # Infinite animation loop
+    img = f.read(size)
+    if len(img) == 0:                   # looping to the file beginning
+        f.seek(0)
+        img = f.read(size)
+    buf = bytearray(size)               # Zeroified the output buffer
+    ssd1306_image_converter.to_ssd1306(128, 64, img, buf) # Convert to ssd1306 format (ie cpu cost)
+    oled.send_buffer(img)               # Display the image
+
+```
 
 
 ## Any questions or comments are welcome :bird:
